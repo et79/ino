@@ -209,8 +209,9 @@ class Environment(dict):
         return [os.path.join(p, *dirname_parts) for p in places]
 
     def board_models(self):
-        if 'board_models' in self:
-            return self['board_models']
+        # `self['board_models']` だと leonardo が使えないので、コメントアウト
+        # if 'board_models' in self:
+        #     return self['board_models']
 
         # boards.txt can be placed in following places
         # - hardware/arduino/boards.txt (Arduino IDE 0.xx, 1.0.x)
