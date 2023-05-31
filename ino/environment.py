@@ -218,48 +218,48 @@ class Environment(dict):
         # - hardware/arduino/{chipset}/boards.txt (Arduino 1.5.x, chipset like `avr`, `sam`)
         # - hardware/{platform}/boards.txt (MPIDE 0.xx, platform like `arduino`, `pic32`)
         # we should find and merge them all
-        boards_txts = self.find_arduino_file('boards.txt', ['hardware', '**'], 
+        boards_txt = self.find_arduino_file('boards.txt', ['hardware', '**'], 
                                              human_name='Board description file (boards.txt)',
                                              multi=True)
 
         self['board_models'] = BoardModels()
         self['board_models'].default = self.default_board_model
-        for boards_txt in boards_txts:
-            with open(boards_txt) as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith('#'):
-                        continue
+        # for boards_txt in boards_txts:
+        with open(boards_txt) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
 
-                    # Transform lines like:
-                    #   yun.upload.maximum_data_size=2560
-                    # into a nested dict `board_models` so that
-                    #   self['board_models']['yun']['upload']['maximum_data_size'] == 2560
-                    multikey, _, val = line.partition('=')
-                    multikey = multikey.split('.')
+                # Transform lines like:
+                #   yun.upload.maximum_data_size=2560
+                # into a nested dict `board_models` so that
+                #   self['board_models']['yun']['upload']['maximum_data_size'] == 2560
+                multikey, _, val = line.partition('=')
+                multikey = multikey.split('.')
 
-                    # traverse into dictionary up to deepest level
-                    # create nested dictionaries if they aren't exist yet
-                    subdict = self['board_models']
-                    for key in multikey[:-1]:
-                        if key not in subdict:
-                            subdict[key] = {}
-                        elif not isinstance(subdict[key], dict):
-                            # it happens that a particular key
-                            # has a value and has sublevels at same time. E.g.:
-                            #   diecimila.menu.cpu.atmega168=ATmega168
-                            #   diecimila.menu.cpu.atmega168.upload.maximum_size=14336
-                            #   diecimila.menu.cpu.atmega168.upload.maximum_data_size=1024
-                            #   diecimila.menu.cpu.atmega168.upload.speed=19200
-                            # place value `ATmega168` into a special key `_` in such case
-                            subdict[key] = {'_': subdict[key]}
-                        subdict = subdict[key]
+                # traverse into dictionary up to deepest level
+                # create nested dictionaries if they aren't exist yet
+                subdict = self['board_models']
+                for key in multikey[:-1]:
+                    if key not in subdict:
+                        subdict[key] = {}
+                    elif not isinstance(subdict[key], dict):
+                        # it happens that a particular key
+                        # has a value and has sublevels at same time. E.g.:
+                        #   diecimila.menu.cpu.atmega168=ATmega168
+                        #   diecimila.menu.cpu.atmega168.upload.maximum_size=14336
+                        #   diecimila.menu.cpu.atmega168.upload.maximum_data_size=1024
+                        #   diecimila.menu.cpu.atmega168.upload.speed=19200
+                        # place value `ATmega168` into a special key `_` in such case
+                        subdict[key] = {'_': subdict[key]}
+                    subdict = subdict[key]
 
-                    subdict[multikey[-1]] = val
+                subdict[multikey[-1]] = val
 
-                    # store spectial `_coredir` value on top level so we later can build
-                    # paths relative to a core directory of a specific board model
-                    self['board_models'][multikey[0]]['_coredir'] = os.path.dirname(boards_txt)
+                # store spectial `_coredir` value on top level so we later can build
+                # paths relative to a core directory of a specific board model
+                self['board_models'][multikey[0]]['_coredir'] = os.path.dirname(boards_txt)
 
         return self['board_models']
 
